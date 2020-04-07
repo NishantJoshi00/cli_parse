@@ -78,3 +78,64 @@ fn from_tuple(template: Vec<(&str, Option<&str>, &str)>) -> Vec<Argument_> {
     }
     output
 }
+
+pub fn parse_arguments(argv: Vec<String>, template: Vec<(&str, Option<&str>, &str)>) -> Parsed {
+    let template = from_tuple(template);
+    let binary = argv[0].clone();
+    let mut arguments: Vec<Argument> = Vec::new();
+    let mut skip: bool = false;
+    let mut command: Option<String> = Option::None;
+    let mut argtype: (Option<ArgType_>, String);
+    for i in 1..argv.len() {
+        if skip {
+            skip = false;
+            continue;
+        }
+        if argv[i].starts_with("--") && argv[i].len() > 2 {
+            argtype = get_type(argv[i].clone(), &template, false);
+
+        } else if  argv[i].starts_with("-") && argv[i].len() > 1 {
+            argtype = get_type(argv[i].clone(), &template, true);
+
+        } else {
+            command = Some(argv[i].clone());
+            continue;
+
+        }
+        match argtype.0 {
+            Some(ty) => {
+                let temp_arg = match ty {
+                    ArgType_::Int => {
+                        let val: i32 = match argv[i + 1].clone().trim().parse() {
+                            Ok(val) => val,
+                            Err(k) => panic!("{} while parsing {}", k, argv[i])
+                        };
+                        skip = true;
+                        ArgType::Int(val)
+                    },
+                    ArgType_::Str => {
+                        if argv[i + 1].clone().starts_with("-") || argv[i + 1].clone().starts_with("--") {
+                            panic!("String expected but provided with : {}", argv[i + 1]);
+                        } else {
+                            skip = true;
+                            ArgType::Str(argv[i + 1].clone())
+                        }
+                        
+                    },
+                    ArgType_::None => ArgType::None
+                };
+                arguments.push(Argument {
+                    name: argtype.1.clone(),
+                    value: temp_arg
+                })
+            }
+            None => panic!("Invalid argument : {} was passed", i)
+        }
+    }
+    Parsed {
+        binary: binary,
+        arguments: arguments,
+        command: command
+    }
+
+}
