@@ -55,3 +55,26 @@ fn get_type(name: String, template: &Vec<Argument_>, nick: bool) -> (Option<ArgT
 
     (None, name.clone())
 }
+
+
+fn from_tuple(template: Vec<(&str, Option<&str>, &str)>) -> Vec<Argument_> {
+    // This for making templating easier for end developer
+    let mut output: Vec<Argument_> = Vec::new();
+    for i in template {
+        output.push(Argument_ {
+            name: i.0.to_owned(),
+            nickname: match i.1 {
+                Some(v) => Some(v.to_owned()),
+                None => None
+            },
+            value: if i.2.to_lowercase() == "int" {
+                ArgType_::Int
+            } else if i.2.to_lowercase() == "str" {
+                ArgType_::Str
+            } else {
+                ArgType_::None
+            }
+        })
+    }
+    output
+}
